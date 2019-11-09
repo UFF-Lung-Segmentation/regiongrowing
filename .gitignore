@@ -5,6 +5,7 @@ dataset/
 backup/
 *.ini
 data/
+.DS_Store
 
 *.i
 *.ii

@@ -3,8 +3,8 @@
 #include <string.h>
 #include <cuda.h>
 
-#define IMAGE_INPUT_DIR "/home/uffgpu2019/turma2019_2/paulo/cuda/region/dataset/ratos/220517_7/input"
-#define IMAGE_OUTPUT_DIR "/home/uffgpu2019/turma2019_2/paulo/cuda/region/dataset/ratos/220517_7/output"
+#define IMAGE_INPUT_DIR "dataset/Cx2_Ima1/csv"
+#define IMAGE_OUTPUT_DIR "dataset/Cx2_Ima1/region"
 #define WIDTH 512
 #define MAX_NUMBER_CORTES 300
 
