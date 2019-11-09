@@ -2,13 +2,17 @@
 #include <dirent.h>
 #include <string.h>
 #include <cuda.h>
+#include <sys/stat.h>
 
-#define IMAGE_INPUT_DIR "dataset/Cx2_Ima1/csv"
-#define IMAGE_OUTPUT_DIR "dataset/Cx2_Ima1/region"
+// input and outpt files
+#define IMAGE_INPUT_DIR "../dataset/Cx2_Ima1/csv"
+#define IMAGE_OUTPUT_DIR "../dataset/Cx2_Ima1/region"
+
+// image properties
 #define WIDTH 512
 #define MAX_NUMBER_CORTES 400
 
-// Limiar area dos pulmões
+// lung area thresholds
 #define HU_PULMAO_MIN -700
 #define HU_PULMAO_MAX -600
       
@@ -16,15 +20,15 @@
 #define MIN_HU -1024
 #define MAX_HU 100
 
-// número de features extraídas de cada voxel
+// region growing parameters
+#define SEED_SLICE 176
 #define NUM_FEATURES 5
 #define LIMIAR 0.9
 
-// constantes para trabalhar com arqivos
+// file constants
 #define MAX_LINE_SIZE 3072 // se pixel value 16bit: valores -32768 a +32767: 6 caracteres * 512 elementos por linha = 3.072 
-#define MAX_TOKEN_SIZE 6
+#define MAX_TOKEN_SIZE 6   // tamanho de cada valor do csv
 #define MAX_FILENAME 1024  
-
 
 // *********************************************************************
 // funcao que informa a quantidade de cortes no diretório
@@ -124,6 +128,12 @@ int loadCT(int *imagem){
 // *********************************************************************
 int saveCT(int *imagem, int num_slices){
   
+  // cria diretorio de saída se ele nao existe
+  struct stat st = {0};
+  if (stat(IMAGE_OUTPUT_DIR, &st) == -1) {
+      mkdir(IMAGE_OUTPUT_DIR, 0700);
+  }
+  
   int pixels_por_slice = WIDTH * WIDTH;
   
   char filename[MAX_FILENAME];
@@ -181,13 +191,14 @@ int getCoord(int flat, int *x, int *y, int *z){
 // *********************************************************************
 // calcula o pixel semente
 // *********************************************************************
-int calculateSeed(int *imagedata, int depth){
+int calculateSeed(int *imagedata){
   // Inicialmente usando uma semente apenas.
   // Para identificar a semente incial utilizei o seguinte critério:
   // No corte central, busca na linha 255, a partir da coluna 255 o primeiro pixel entre -600 e -700 (tipicamente pulmão)
   int x = WIDTH / 2; //256
   int y = WIDTH / 2; // 256
-  int z = depth / 2;
+  // int z = depth / 2;
+  int z = SEED_SLICE;
   int pos_seed = -1;
   for (int i = x; i < WIDTH; i++){
     int flat = getFlat(i, y, z);
@@ -355,7 +366,7 @@ int main(void)
   // 4. identifica o pixel semente e calcula vetor de caracteristicas (HU, MEAN, MIN, MAX, CVE)
   printf(">>> identificando a semente\n");    
   int index_seed = 0;
-  if ((index_seed = calculateSeed(h_imagedata, num_slices)) < 0){
+  if ((index_seed = calculateSeed(h_imagedata)) < 0){
     printf("erro ao calcular o pixel semente\n");
     return(-1);
   }
@@ -398,7 +409,7 @@ int main(void)
 
   // 5. Kernel que aplica uma máscara na imagem original para destacar a área obtida com o crescimento de região
   //    O resultado é armazenado na próxima mascara (d_regiondata)
-  regionMask<<<dimGrid,dimBlock>>>(d_imagedata, d_regiondata, num_slices);
+  // regionMask<<<dimGrid,dimBlock>>>(d_imagedata, d_regiondata, num_slices);
   
   // 6. copia resultado para memoria principal
   cudaMemcpy(h_regiondata, d_regiondata, sizect, cudaMemcpyDeviceToHost);

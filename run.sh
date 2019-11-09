@@ -5,3 +5,4 @@ echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   ./$1.cuda
+fi
