@@ -6,7 +6,7 @@
 #define IMAGE_INPUT_DIR "dataset/Cx2_Ima1/csv"
 #define IMAGE_OUTPUT_DIR "dataset/Cx2_Ima1/region"
 #define WIDTH 512
-#define MAX_NUMBER_CORTES 300
+#define MAX_NUMBER_CORTES 400
 
 // Limiar area dos pulmões
 #define HU_PULMAO_MIN -700
