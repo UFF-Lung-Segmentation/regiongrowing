@@ -142,7 +142,7 @@ int saveCT(int *imagem, int num_slices){
   int cursor=0;
   
   for (int i = 0; i < num_slices; i++){
-    snprintf(filename, 15, "/slice_%03d.txt", i);
+    snprintf(filename, 16, "/SLICE-%04d.txt", i+1);
     strcpy(filepath, IMAGE_OUTPUT_DIR);
     strcat(filepath, filename);
     // printf("%s\n", filepath); 
