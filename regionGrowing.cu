@@ -8,6 +8,11 @@
 #define IMAGE_INPUT_DIR "../dataset/Cx2_Ima1/csv"
 #define IMAGE_OUTPUT_DIR "../dataset/Cx2_Ima1/region"
 
+// region growing parameters
+#define SEED_SLICE 169
+#define NUM_FEATURES 5
+#define LIMIAR 0.3
+
 // image properties
 #define WIDTH 512
 #define MAX_NUMBER_CORTES 400
@@ -19,11 +24,6 @@
 // MIN/MAX das tomografias dos ratos
 #define MIN_HU -1024
 #define MAX_HU 100
-
-// region growing parameters
-#define SEED_SLICE 176
-#define NUM_FEATURES 5
-#define LIMIAR 0.9
 
 // file constants
 #define MAX_LINE_SIZE 3072 // se pixel value 16bit: valores -32768 a +32767: 6 caracteres * 512 elementos por linha = 3.072 
@@ -142,7 +142,7 @@ int saveCT(int *imagem, int num_slices){
   int cursor=0;
   
   for (int i = 0; i < num_slices; i++){
-    snprintf(filename, 14, "/slice_%02d.txt", i);
+    snprintf(filename, 15, "/slice_%03d.txt", i);
     strcpy(filepath, IMAGE_OUTPUT_DIR);
     strcat(filepath, filename);
     // printf("%s\n", filepath); 
@@ -345,10 +345,6 @@ int main(void)
   int *h_regiondata = (int *)malloc(sizect);
   // inicializa vetor da regiao com zeros
   for (int i = 0; i < num_elementos; i++) h_regiondata[i] = 0;
-  printf(">>> resumo da TC \n");  
-  printf("num slices da TC: %d\n", num_slices);  
-  printf("tamanho da TC (elementos): %d\n", num_elementos);
-  printf("tamanho da TC (bytes): %lu\n", sizect);
   
   // 2. carrega os cortes na memoria principal
   printf(">>> carregando a tomografia na memória principal \n");  
@@ -367,14 +363,14 @@ int main(void)
   printf(">>> identificando a semente\n");    
   int index_seed = 0;
   if ((index_seed = calculateSeed(h_imagedata)) < 0){
-    printf("erro ao calcular o pixel semente\n");
+    printf("couldn't find seed pixel, try another slice\n");
     return(-1);
   }
   if (index_seed == 0){
      printf("não obteve a semente para o crescimento de região\n");
     return(-1);
   }else{
-     printf("posição da semente: %d\n", index_seed);    
+     printf("seed position: %d\n", index_seed);    
   }
   h_regiondata[index_seed] = 1;
   // calcula vetor de caracteristicas da semente(HU, MEAN, MIN, MAX, CVE)
@@ -420,8 +416,19 @@ int main(void)
     printf("erro ao salvar o resultado em disco\n");
     return(-1);
   }
+
+  // 8. summary
+  printf(">>> resumo da TC \n");  
+  printf("num slices da TC: %d\n", num_slices);  
+  printf("tamanho da TC (elementos): %d\n", num_elementos);
+  printf("tamanho da TC (bytes): %lu\n", sizect);
+  int volume = 0;
+  for (int i = 0; i<num_elementos;i++){
+    if (h_regiondata[i] == 1) volume +=1;
+  }
+  printf("volume da região (pixels): %d\n", volume);
   
-  // 8. limpeza
+  // 9. cleaning
   free (h_imagedata);
   free (h_regiondata);
   free(h_seed_vector);
