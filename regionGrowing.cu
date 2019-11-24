@@ -5,11 +5,13 @@
 #include <sys/stat.h>
 
 // input and outpt files
-#define IMAGE_INPUT_DIR "../dataset/Cx2_Ima1/csv"
-#define IMAGE_OUTPUT_DIR "../dataset/Cx2_Ima1/region"
+#define IMAGE_INPUT_DIR "../dataset/Imacx01Animal2/csv"
+#define IMAGE_OUTPUT_DIR "../dataset/Imacx01Animal2/region"
 
 // region growing parameters
-#define SEED_SLICE 169
+#define SEED_X 193
+#define SEED_Y 197
+#define SEED_Z 147
 #define NUM_FEATURES 5
 #define LIMIAR 0.3
 
@@ -64,10 +66,10 @@ int loadCT(int *imagem){
   struct dirent *dir;
   d = opendir(IMAGE_INPUT_DIR);
   char files[MAX_NUMBER_CORTES][MAX_FILENAME];
-  int num_files = 0;
+  int num_files = 0; 
   if (d){
       while ((dir = readdir(d)) != NULL)
-      {
+      { 
         if (dir->d_type == DT_REG){
           char filename[MAX_FILENAME] = IMAGE_INPUT_DIR "/";
           strcpy(files[num_files++], strcat(filename,dir->d_name));
@@ -198,12 +200,12 @@ int calculateSeed(int *imagedata){
   int x = WIDTH / 2; //256
   int y = WIDTH / 2; // 256
   // int z = depth / 2;
-  int z = SEED_SLICE;
+  int z = SEED_Z;
   int pos_seed = -1;
   for (int i = x; i < WIDTH; i++){
     int flat = getFlat(i, y, z);
-    //printf("imagedata[%d] (%d, %d, %d): %d\n", flat, i, y, z, imagedata[flat]);
     if (imagedata[flat] > HU_PULMAO_MIN && imagedata[flat] < HU_PULMAO_MAX){
+      printf("seed[%d] (%d, %d, %d): %d\n", flat, i, y, z, imagedata[flat]);
       pos_seed = flat;
       break;
     }
@@ -266,6 +268,16 @@ int calculateFeatures(int index, int *pixeldata, int depth, float *vector){
   float max = 0;
   float sum = 0;
   float qtde = 0;
+  // CVE calculation variables (not in use yet)
+  float classes_distance[3] = {0.0, 0.0, 0.0};
+  float classes_mean[3] = {0.0, 0.0, 0.0};
+  float classes_cv[3] = {0.0, 0.0, 0.0};
+  float classes_cve[3] = {0.0, 0.0, 0.0};
+  float classes_cve_mean = 0;
+  float classes_cve_cv = 0;
+  float cve_texture = 0;
+  
+  // calculates: mean, min and max
   for (int k = z-1; k <= z + 1; k++){
     for (int j = y-1; j <= y + 1; j++){
       for (int i = x-1; i <= x + 1; i++){
@@ -352,7 +364,7 @@ int main(void)
     printf("erro ao carregar arquivos da tomografia\n");
     return(-1);
   }
-
+  
   // 3. aloca as variaveis na memoria do device 
   int *d_imagedata;
   cudaMalloc((void **)&d_imagedata, sizect);
@@ -362,7 +374,9 @@ int main(void)
   // 4. identifica o pixel semente e calcula vetor de caracteristicas (HU, MEAN, MIN, MAX, CVE)
   printf(">>> identificando a semente\n");    
   int index_seed = 0;
-  if ((index_seed = calculateSeed(h_imagedata)) < 0){
+  //index_seed = calculateSeed(h_imagedata);
+  index_seed = getFlat(SEED_X, SEED_Y, SEED_Z);  
+  if ( index_seed < 0){
     printf("couldn't find seed pixel, try another slice\n");
     return(-1);
   }
